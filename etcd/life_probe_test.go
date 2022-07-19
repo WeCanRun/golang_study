@@ -11,7 +11,7 @@ func TestNewProbe(t *testing.T) {
 	probe := NewProbe(context.Background(), "test", 5)
 	go probe.watchLifeProbe()
 	go func() {
-		for true {
+		for {
 			if err := probe.postHealth(); err != nil {
 				log.Println("post health fail, err: ", err)
 				return

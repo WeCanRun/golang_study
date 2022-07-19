@@ -1,10 +1,14 @@
 package common
 
 import (
+	"errors"
 	"fmt"
+	"runtime"
 	"sync"
 	"testing"
 	"time"
+
+	"golang.org/x/sync/errgroup"
 )
 
 var mu sync.Mutex
@@ -47,6 +51,10 @@ func TestOnce(t *testing.T) {
 	once.Do(func() {
 		t.Log(a)
 	})
+
+	once.Do(func() {
+		t.Log(b)
+	})
 }
 
 type MyMutex struct {
@@ -74,4 +82,21 @@ func TestMyMutex(t *testing.T) {
 	count++
 	mu2.Unlock()
 	fmt.Println(count, count)
+}
+
+func TestErrGroup(t *testing.T) {
+	var g errgroup.Group
+	for i := 0; i <= 2; i++ {
+		j := i
+		g.Go(func() error {
+			if j%2 == 0 {
+				return nil
+			}
+			return errors.New("单数")
+		})
+	}
+	t.Log(runtime.NumGoroutine())
+	if err := g.Wait(); err != nil {
+		t.Error(err)
+	}
 }
