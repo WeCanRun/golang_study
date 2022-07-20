@@ -8,18 +8,35 @@ import (
 	"log"
 )
 
-func NewDBModel(info *DBInfo) *DBModel {
-	return &DBModel{
+func NewDBModel(info *DBInfo) *dbModel {
+	return &dbModel{
 		DBInfo: info,
 	}
 }
 
-type DBModel struct {
+type DBInfo struct {
+	DBType   string
+	Host     string
+	UserName string
+	Password string
+	Charset  string
+}
+
+type TableColumn struct {
+	ColumnName    string
+	DataType      string
+	IsNullable    string
+	ColumnKey     string
+	ColumnType    string
+	ColumnComment string
+}
+
+type dbModel struct {
 	DBEngine *sql.DB
 	DBInfo   *DBInfo
 }
 
-func (db *DBModel) Connect() error {
+func (db *dbModel) Connect() error {
 	var err error
 	s := fmt.Sprintf("%s:%s@tcp(%s)/information_schema?charset=%s&parseTime=True",
 		db.DBInfo.UserName,
@@ -28,15 +45,12 @@ func (db *DBModel) Connect() error {
 		db.DBInfo.Charset)
 
 	db.DBEngine, err = sql.Open(db.DBInfo.DBType, s)
-	if err != nil {
-		log.Fatalf("sql.Open err: %v\n", err)
-	}
 	return err
 }
 
-func (db *DBModel) GetColumn(dbName, tableName string) (columns []*TableColumn, err error) {
+func (db *dbModel) GetColumns(dbName, tableName string) (columns []*TableColumn, err error) {
 	sql := " select column_name, data_type, column_key, is_nullable, column_type, column_comment " +
-		"form Columns where table_schema = ? and table_name = ? "
+		"from information_schema.columns where table_schema = ? and table_name = ? "
 
 	rows, err := db.DBEngine.Query(sql, dbName, tableName)
 	if err != nil {
@@ -59,21 +73,4 @@ func (db *DBModel) GetColumn(dbName, tableName string) (columns []*TableColumn, 
 	}
 
 	return
-}
-
-type DBInfo struct {
-	DBType   string
-	Host     string
-	UserName string
-	Password string
-	Charset  string
-}
-
-type TableColumn struct {
-	ColumnName    string
-	DataType      string
-	IsNullable    string
-	ColumnKey     string
-	ColumnType    string
-	ColumnComment string
 }
